@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Midnight Mass Live - 24/7 Online Radio</title>
     <link rel="stylesheet" href="static/css/style.css">
-    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <!-- Video/DASH streaming disabled - see commented-out player section below -->
+    <!-- <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script> -->
 </head>
 <body>
         <div class="vw-scene" aria-hidden="true">
@@ -82,7 +83,7 @@
             </div>
         </section>
 
-        <!-- Live Player Section -->
+        <!-- Live Player Section - video streaming disabled
         <section class="player-section" id="player">
             <div class="player-container">
                 <div class="player-status">
@@ -102,6 +103,7 @@
                 </div>
             </div>
         </section>
+        -->
 
         <!-- Current Show & Next Show -->
         <section class="current-next">
@@ -209,7 +211,7 @@
     <script>
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            initializePlayer();
+            // initializePlayer(); // video streaming disabled
             initNowPlaying();
             initRequests();
             loadSchedule();

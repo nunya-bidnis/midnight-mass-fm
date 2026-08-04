@@ -3,218 +3,222 @@
  * Handles stream playback with dash.js
  */
 
-let dashPlayer = null;
-const VIDEO_ELEMENT = document.getElementById('video-player');
-const PLAY_BTN = document.getElementById('play-btn');
-const MUTE_BTN = document.getElementById('mute-btn');
-const VOLUME_SLIDER = document.getElementById('volume');
-const STREAM_STATUS = document.getElementById('stream-status');
-const NOW_PLAYING = document.getElementById('now-playing');
-const STREAM_DETAILS = document.getElementById('stream-details');
+// Video streaming disabled - DASH/video player code commented out below.
+// loadSchedule/displaySchedule/formatTime/escapeHtml at the bottom of this
+// file are unrelated to the player and are still in use.
 
-const DASH_MANIFEST_URL = '/api/stream/dash/manifest.mpd';
-const STATUS_CHECK_INTERVAL = 5000; // Check every 5 seconds
-
-/**
- * Initialize DASH player with error handling
- */
-function initializePlayer() {
-    if (!dashjs.MediaPlayer) {
-        console.error('dash.js library not loaded');
-        return;
-    }
-
-    dashPlayer = dashjs.MediaPlayer().create();
-    dashPlayer.initialize(VIDEO_ELEMENT, DASH_MANIFEST_URL, false);
-
-    // Configure player
-    dashPlayer.updateSettings({
-        streaming: {
-            bufferingTimeDefault: 3,
-            bufferingTimeMax: 10,
-            maxBitrateForPlay: 10000000,
-            maxBitrateDefault: 8000000
-        }
-    });
-
-    // Event listeners
-    dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, onStreamInitialized);
-    dashPlayer.on(dashjs.MediaPlayer.events.ERROR, onPlayerError);
-    dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_REQUESTED, onQualityChange);
-
-    VIDEO_ELEMENT.addEventListener('play', onVideoPlay);
-    VIDEO_ELEMENT.addEventListener('pause', onVideoPause);
-    VIDEO_ELEMENT.addEventListener('error', onVideoError);
-
-    // Button controls
-    PLAY_BTN.addEventListener('click', togglePlayPause);
-    MUTE_BTN.addEventListener('click', toggleMute);
-    VOLUME_SLIDER.addEventListener('input', updateVolume);
-
-    // Check stream status
-    checkStreamStatus();
-    setInterval(checkStreamStatus, STATUS_CHECK_INTERVAL);
-}
-
-/**
- * Toggle play/pause
- */
-function togglePlayPause() {
-    if (!dashPlayer) return;
-
-    if (VIDEO_ELEMENT.paused) {
-        VIDEO_ELEMENT.play()
-            .catch(err => {
-                console.error('Play error:', err);
-                showError('Unable to play stream');
-            });
-        PLAY_BTN.textContent = 'Pause';
-    } else {
-        VIDEO_ELEMENT.pause();
-        PLAY_BTN.textContent = 'Play';
-    }
-}
-
-/**
- * Toggle mute
- */
-function toggleMute() {
-    if (VIDEO_ELEMENT.muted) {
-        VIDEO_ELEMENT.muted = false;
-        MUTE_BTN.textContent = 'Mute';
-    } else {
-        VIDEO_ELEMENT.muted = true;
-        MUTE_BTN.textContent = 'Unmute';
-    }
-}
-
-/**
- * Update volume
- */
-function updateVolume(e) {
-    const volume = parseInt(e.target.value) / 100;
-    VIDEO_ELEMENT.volume = Math.max(0, Math.min(1, volume));
-}
-
-/**
- * Check stream status from API
- */
-async function checkStreamStatus() {
-    try {
-        const response = await fetch('/api/stream/status');
-
-        if (response.ok) {
-            const data = await response.json();
-            updateStreamStatus(data);
-        } else {
-            // No active stream
-            setStreamOffline();
-        }
-    } catch (error) {
-        console.error('Error checking stream status:', error);
-    }
-}
-
-/**
- * Update UI with stream status
- */
-function updateStreamStatus(status) {
-    STREAM_STATUS.textContent = '● Online';
-    STREAM_STATUS.classList.remove('offline');
-    STREAM_STATUS.classList.add('online');
-
-    NOW_PLAYING.textContent = `${status.username} is live`;
-    STREAM_DETAILS.textContent = `Viewers: ${status.viewers || 0}`;
-
-    if (status.bitrate) {
-        STREAM_DETAILS.textContent += ` • ${(status.bitrate / 1000).toFixed(0)} kbps`;
-    }
-    if (status.resolution) {
-        STREAM_DETAILS.textContent += ` • ${status.resolution}`;
-    }
-}
-
-/**
- * Set stream to offline
- */
-function setStreamOffline() {
-    STREAM_STATUS.textContent = '● Offline';
-    STREAM_STATUS.classList.add('offline');
-    STREAM_STATUS.classList.remove('online');
-    NOW_PLAYING.textContent = 'No stream available';
-    STREAM_DETAILS.textContent = '';
-
-    if (dashPlayer && !VIDEO_ELEMENT.paused) {
-        VIDEO_ELEMENT.pause();
-        PLAY_BTN.textContent = 'Play';
-    }
-}
-
-/**
- * DASH player event handlers
- */
-function onStreamInitialized() {
-    console.log('Stream initialized');
-}
-
-function onPlayerError(error) {
-    console.error('Player error:', error);
-    // Attempt to recover
-    if (dashPlayer && error.code !== 27) { // Not a manifest update error
-        setTimeout(() => {
-            if (dashPlayer) {
-                dashPlayer.attachView(VIDEO_ELEMENT);
-            }
-        }, 3000);
-    }
-}
-
-function onQualityChange(data) {
-    console.log('Quality changed:', data.bitrateList[data.newQualityIndex]);
-}
-
-/**
- * Video element event handlers
- */
-function onVideoPlay() {
-    PLAY_BTN.textContent = 'Pause';
-}
-
-function onVideoPause() {
-    PLAY_BTN.textContent = 'Play';
-}
-
-function onVideoError(error) {
-    console.error('Video error:', error);
-    showError('Stream playback error. Try reloading the page.');
-}
-
-/**
- * Utility: Show error message
- */
-function showError(message) {
-    // Create temporary error display
-    const errorEl = document.createElement('div');
-    errorEl.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #ef4444;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        z-index: 9999;
-        max-width: 400px;
-    `;
-    errorEl.textContent = message;
-    document.body.appendChild(errorEl);
-
-    setTimeout(() => {
-        errorEl.style.opacity = '0';
-        errorEl.style.transition = 'opacity 0.3s';
-        setTimeout(() => errorEl.remove(), 300);
-    }, 5000);
-}
+// let dashPlayer = null;
+// const VIDEO_ELEMENT = document.getElementById('video-player');
+// const PLAY_BTN = document.getElementById('play-btn');
+// const MUTE_BTN = document.getElementById('mute-btn');
+// const VOLUME_SLIDER = document.getElementById('volume');
+// const STREAM_STATUS = document.getElementById('stream-status');
+// const NOW_PLAYING = document.getElementById('now-playing');
+// const STREAM_DETAILS = document.getElementById('stream-details');
+//
+// const DASH_MANIFEST_URL = '/api/stream/dash/manifest.mpd';
+// const STATUS_CHECK_INTERVAL = 5000; // Check every 5 seconds
+//
+// /**
+//  * Initialize DASH player with error handling
+//  */
+// function initializePlayer() {
+//     if (!dashjs.MediaPlayer) {
+//         console.error('dash.js library not loaded');
+//         return;
+//     }
+//
+//     dashPlayer = dashjs.MediaPlayer().create();
+//     dashPlayer.initialize(VIDEO_ELEMENT, DASH_MANIFEST_URL, false);
+//
+//     // Configure player
+//     dashPlayer.updateSettings({
+//         streaming: {
+//             bufferingTimeDefault: 3,
+//             bufferingTimeMax: 10,
+//             maxBitrateForPlay: 10000000,
+//             maxBitrateDefault: 8000000
+//         }
+//     });
+//
+//     // Event listeners
+//     dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, onStreamInitialized);
+//     dashPlayer.on(dashjs.MediaPlayer.events.ERROR, onPlayerError);
+//     dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_REQUESTED, onQualityChange);
+//
+//     VIDEO_ELEMENT.addEventListener('play', onVideoPlay);
+//     VIDEO_ELEMENT.addEventListener('pause', onVideoPause);
+//     VIDEO_ELEMENT.addEventListener('error', onVideoError);
+//
+//     // Button controls
+//     PLAY_BTN.addEventListener('click', togglePlayPause);
+//     MUTE_BTN.addEventListener('click', toggleMute);
+//     VOLUME_SLIDER.addEventListener('input', updateVolume);
+//
+//     // Check stream status
+//     checkStreamStatus();
+//     setInterval(checkStreamStatus, STATUS_CHECK_INTERVAL);
+// }
+//
+// /**
+//  * Toggle play/pause
+//  */
+// function togglePlayPause() {
+//     if (!dashPlayer) return;
+//
+//     if (VIDEO_ELEMENT.paused) {
+//         VIDEO_ELEMENT.play()
+//             .catch(err => {
+//                 console.error('Play error:', err);
+//                 showError('Unable to play stream');
+//             });
+//         PLAY_BTN.textContent = 'Pause';
+//     } else {
+//         VIDEO_ELEMENT.pause();
+//         PLAY_BTN.textContent = 'Play';
+//     }
+// }
+//
+// /**
+//  * Toggle mute
+//  */
+// function toggleMute() {
+//     if (VIDEO_ELEMENT.muted) {
+//         VIDEO_ELEMENT.muted = false;
+//         MUTE_BTN.textContent = 'Mute';
+//     } else {
+//         VIDEO_ELEMENT.muted = true;
+//         MUTE_BTN.textContent = 'Unmute';
+//     }
+// }
+//
+// /**
+//  * Update volume
+//  */
+// function updateVolume(e) {
+//     const volume = parseInt(e.target.value) / 100;
+//     VIDEO_ELEMENT.volume = Math.max(0, Math.min(1, volume));
+// }
+//
+// /**
+//  * Check stream status from API
+//  */
+// async function checkStreamStatus() {
+//     try {
+//         const response = await fetch('/api/stream/status');
+//
+//         if (response.ok) {
+//             const data = await response.json();
+//             updateStreamStatus(data);
+//         } else {
+//             // No active stream
+//             setStreamOffline();
+//         }
+//     } catch (error) {
+//         console.error('Error checking stream status:', error);
+//     }
+// }
+//
+// /**
+//  * Update UI with stream status
+//  */
+// function updateStreamStatus(status) {
+//     STREAM_STATUS.textContent = '● Online';
+//     STREAM_STATUS.classList.remove('offline');
+//     STREAM_STATUS.classList.add('online');
+//
+//     NOW_PLAYING.textContent = `${status.username} is live`;
+//     STREAM_DETAILS.textContent = `Viewers: ${status.viewers || 0}`;
+//
+//     if (status.bitrate) {
+//         STREAM_DETAILS.textContent += ` • ${(status.bitrate / 1000).toFixed(0)} kbps`;
+//     }
+//     if (status.resolution) {
+//         STREAM_DETAILS.textContent += ` • ${status.resolution}`;
+//     }
+// }
+//
+// /**
+//  * Set stream to offline
+//  */
+// function setStreamOffline() {
+//     STREAM_STATUS.textContent = '● Offline';
+//     STREAM_STATUS.classList.add('offline');
+//     STREAM_STATUS.classList.remove('online');
+//     NOW_PLAYING.textContent = 'No stream available';
+//     STREAM_DETAILS.textContent = '';
+//
+//     if (dashPlayer && !VIDEO_ELEMENT.paused) {
+//         VIDEO_ELEMENT.pause();
+//         PLAY_BTN.textContent = 'Play';
+//     }
+// }
+//
+// /**
+//  * DASH player event handlers
+//  */
+// function onStreamInitialized() {
+//     console.log('Stream initialized');
+// }
+//
+// function onPlayerError(error) {
+//     console.error('Player error:', error);
+//     // Attempt to recover
+//     if (dashPlayer && error.code !== 27) { // Not a manifest update error
+//         setTimeout(() => {
+//             if (dashPlayer) {
+//                 dashPlayer.attachView(VIDEO_ELEMENT);
+//             }
+//         }, 3000);
+//     }
+// }
+//
+// function onQualityChange(data) {
+//     console.log('Quality changed:', data.bitrateList[data.newQualityIndex]);
+// }
+//
+// /**
+//  * Video element event handlers
+//  */
+// function onVideoPlay() {
+//     PLAY_BTN.textContent = 'Pause';
+// }
+//
+// function onVideoPause() {
+//     PLAY_BTN.textContent = 'Play';
+// }
+//
+// function onVideoError(error) {
+//     console.error('Video error:', error);
+//     showError('Stream playback error. Try reloading the page.');
+// }
+//
+// /**
+//  * Utility: Show error message
+//  */
+// function showError(message) {
+//     // Create temporary error display
+//     const errorEl = document.createElement('div');
+//     errorEl.style.cssText = `
+//         position: fixed;
+//         top: 20px;
+//         right: 20px;
+//         background-color: #ef4444;
+//         color: white;
+//         padding: 15px 20px;
+//         border-radius: 8px;
+//         z-index: 9999;
+//         max-width: 400px;
+//     `;
+//     errorEl.textContent = message;
+//     document.body.appendChild(errorEl);
+//
+//     setTimeout(() => {
+//         errorEl.style.opacity = '0';
+//         errorEl.style.transition = 'opacity 0.3s';
+//         setTimeout(() => errorEl.remove(), 300);
+//     }, 5000);
+// }
 
 /**
  * Load upcoming schedule from API
