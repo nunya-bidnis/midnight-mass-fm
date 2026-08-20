@@ -34,6 +34,95 @@
             </nav>
         </header>
 
+        <!-- New Here? Broadcast Setup Guide -->
+        <details class="first-timer-box">
+            <summary>New here? Read this first</summary>
+            <div class="first-timer-body">
+                <h2>Broadcast setup: OBS / Streamlabs, in five minutes</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    This is the whole setup. Follow it once and you won't need to touch it again unless
+                    you get a new stream key.
+                </p>
+
+                <h3>1. Point your encoder at Mingeplex Live</h3>
+                <p>In OBS or Streamlabs, go to <strong>Settings &rarr; Stream</strong>:</p>
+                <ul>
+                    <li>Service: <strong>Custom</strong></li>
+                    <li>Server: <code>rtmp://radio.girthplex.info:1935/live</code></li>
+                    <li>Stream Key: your key from the <strong>Stream Keys</strong> section below &mdash;
+                        never share this, it's what proves broadcasts are you</li>
+                </ul>
+
+                <div style="background-color: rgba(255, 63, 110, 0.08); border-left: 4px solid var(--danger-color); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                    <p style="margin: 0;">
+                        <strong>Stream key vs. Now Playing token &mdash; do not mix these up.</strong>
+                        The stream key goes in OBS/Streamlabs only. The Now Playing token (further down
+                        this page) goes in a separate metadata agent, never in your broadcast settings.
+                        If you paste the wrong one into OBS, the stream just won't connect.
+                    </p>
+                </div>
+
+                <h3>2. Audio settings &mdash; this is the one that matters</h3>
+                <p>Go to <strong>Settings &rarr; Output</strong> (Advanced mode) and set your audio track:</p>
+                <ul>
+                    <li>Audio Bitrate: <strong>128 kbps</strong></li>
+                    <li>Encoder: AAC</li>
+                    <li>Sample Rate: 44.1 kHz, Stereo (in <strong>Settings &rarr; Audio</strong>)</li>
+                </ul>
+                <p>
+                    128 kbps AAC is the sweet spot for music: close to transparent quality, without
+                    pushing bandwidth costs up for no audible benefit. If you want a bit more headroom for
+                    dense/high-frequency mixes, 160 kbps is a reasonable step up. Don't go below
+                    96 kbps &mdash; it starts audibly smearing stereo imaging &mdash; and don't go above
+                    192 kbps, since nobody can hear the difference on a live stream and it just costs
+                    everyone more bandwidth.
+                </p>
+
+                <h3>3. Turn video off</h3>
+                <p>
+                    <strong>Mingeplex Live is an audio station.</strong> Your stream still carries a video
+                    track by default (OBS/Streamlabs always encode one), and every listener downloads it
+                    even though nobody's watching. Two ways to fix this:
+                </p>
+                <ul>
+                    <li><strong>Easiest:</strong> Remove all sources from your OBS scene except audio
+                        (no webcam, no capture card, no display). A blank/black scene still technically
+                        sends a tiny video track, but at negligible bitrate.</li>
+                    <li><strong>Cleanest:</strong> In <strong>Settings &rarr; Output</strong>, drop your
+                        video bitrate as low as OBS allows (500 kbps or below) and resolution down to
+                        something like 320x240. It still exists, but it's no longer eating the bandwidth
+                        budget your listeners are paying for in data.</li>
+                </ul>
+                <p style="color: var(--text-secondary);">
+                    (If a future update strips video server-side, this step becomes unnecessary &mdash;
+                    for now, it's on each broadcaster.)
+                </p>
+
+                <h3>4. Recommended full Output settings</h3>
+                <ul>
+                    <li>Output Mode: <strong>Advanced</strong></li>
+                    <li>Encoder: x264 (or your GPU encoder, doesn't matter much for audio quality)</li>
+                    <li>Rate Control: CBR</li>
+                    <li>Video Bitrate: as low as your encoder allows (see step 3)</li>
+                    <li>Audio Bitrate: <strong>128 kbps</strong> (or 160 kbps)</li>
+                    <li>Audio Format: AAC</li>
+                </ul>
+
+                <h3>5. Go live</h3>
+                <p>
+                    Hit <strong>Start Streaming</strong> in OBS/Streamlabs. Your status card above will
+                    flip to <strong>Live Now</strong> within a few seconds. If it doesn't, double-check
+                    you used the stream key (not the Now Playing token) and that the server URL is typed
+                    exactly as above.
+                </p>
+
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 20px;">
+                    Questions or something not connecting? Ping an admin before you burn your whole set
+                    troubleshooting &mdash; most connection issues are a copy-paste mistake with the key.
+                </p>
+            </div>
+        </details>
+
         <!-- Profile & Stream Status -->
         <section class="schedule-section">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
